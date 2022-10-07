@@ -66,7 +66,7 @@ class VehicleSimulator(Node):
         #print('type of self.old_position = ', type(self.old_position), self.old_position)
         #print('veh_sim; rad_of_curve = ', self.rad_of_curvature)
 
-        ans = update_vehicle_pose(self.old_position, self.old_heading_deg, self.rad_of_curvature, self.speed)
+        ans = update_vehicle_pose(self.old_position, self.old_heading_deg, self.rad_of_curvature, self.speed/10.0)
 
         new_position    = ans[0]
         new_heading_deg = ans[1]

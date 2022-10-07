@@ -14,7 +14,7 @@ def generate_launch_description():
             executable='route_pose_provider',
             name='route_pose_provider',
             parameters = [
-                {'want_loop': True},
+                {'want_loop': False},
                 {'state_defs': '{0:\'OFF\', 1:\'ON\', 2:\'OUTSIDE\', 3:\'ENTRY_EXTENSION_PT\', 4:\'EXIT_EXTENSION_PT\', 5:\'EXIT_TURN_PT\', 6:\'START\', 7:\'END\', 8:\'UTURN_PT1\', 9:\'UTURN_PT2\', 10:\'UTURN_PT3\', 11:\'CORNER\', 12:\'END_EXTENSION\'}'},
                 {'pose_filename': 'stockpile/bandshell_1.txt'}
             ]
@@ -56,8 +56,8 @@ def generate_launch_description():
             name='motion_spec_provider',
             output='screen',
             parameters = [
-                {'look_ahead_dist': 7.0},
-                {'speed': 0.2}
+                {'look_ahead_dist': 7.0},  # meters
+                {'speed': 2.0}  # meters/sec
             ] 
         ),
 

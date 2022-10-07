@@ -84,6 +84,7 @@ class GoalPoseCreator(Node):
         self.g_xUTM = 0.0
         self.g_yUTM = 0.0
 
+        self.num_route_segments = 0
         self.route_segments = []
         self.look_ahead_pose = route_pose_class()
         self.my_closest_pt = np.array([0.0, 0.0, 0.0])
@@ -148,7 +149,8 @@ class GoalPoseCreator(Node):
             self.look_ahead_pose.heading_rad/2.0)
         
         out_msg.state = int(self.route_segments[self.current_seg_num].state)
-        if(self.route_segments[self.current_seg_num].state == myState.END_PLUS_ONE.value and not self.want_loop):
+        #if(self.route_segments[self.current_seg_num].state == myState.END_PLUS_ONE.value and not self.want_loop):
+        if(self.want_loop == False and self.current_seg_num == self.num_route_segments-1):
             out_msg.speed = 0.0
         else:
             out_msg.speed = self.speed
@@ -303,6 +305,8 @@ def main(args=None):
                 #          carrot_creator.route_segments[i].state, file=fp)
 
                 # fp.close()
+
+                goal_pose_creator.num_route_segments = num_poses
 
                 # create the line strip data to send to rviz
                 if (goal_pose_creator.send_to_rviz.value):
