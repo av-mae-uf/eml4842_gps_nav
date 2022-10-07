@@ -38,7 +38,7 @@ class GoalPoseCreator(Node):
           
         # subscribe to 'vehicle_pose' topic
         self.subscription_vehicle_pose = self.create_subscription(
-            PoseStamped, 'vehicle_pose', self.vehicle_pose_callback, 10)
+            PoseStamped, 'vehicle_pose', self.vehicle_pose_callback, 1) #was 10
         self.subscription_vehicle_pose  # prevent unused variable warning
 
         # subscribe to 'look_ahead_specs' topic

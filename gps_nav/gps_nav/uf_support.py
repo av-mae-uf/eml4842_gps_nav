@@ -194,3 +194,27 @@ def value_near(val, goal, tol):
     return False
 
 #########################################################################
+def dist_between_point_and_line(P1, S1, SoL1):
+  # P1 - coordinates of point 1 ; numpy array of floats ; length 3 ; units of length
+  # S1 - direction of line ; numpy array of floats ; length 3 ; dimensionless
+  # SoL1 - moment of line ; numpy array of floats ; length 3 ; units of length
+
+  # will return a list with two items
+  # first item is a float giving the distance from P1 to the line
+  # second item is a numpy array of three float numbers which are the coordinates of the point on the line closest to the given point
+  
+  # will unitize S1
+  mag = np.linalg.norm(S1)
+  S1 = S1/mag
+  SoL1 = SoL1/mag
+
+  # check that S1 and SoL1 are perpendicular
+  if (not value_near(np.dot(S1,SoL1), 0.0, 0.001)):
+    return numpy.nan
+
+  temp1 = np.cross(P1, S1)
+  dvec  = np.cross(S1,SoL1-temp1)/np.dot(S1,S1)
+  P2 = P1 + dvec
+
+  return [numpy.linalg.norm(dvec), P2]
+#########################################################################
