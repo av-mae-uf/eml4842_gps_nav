@@ -7,7 +7,7 @@ import utm
 def main():
     """
         Call this program as follows:
-             python convert_to_UTM.py  input_file.txt  output_file.txt
+             python3 convert_to_UTM.py  input_file.txt  output_file.txt
     
         This program opens the file 'input_file.txt' which has latitude and longitude data on each line
         where the values are separated by a comma.  Each latitude/longitude pair is converted to UTM coordinates.
@@ -24,16 +24,17 @@ def main():
     out_filename = sys.argv[2]
 
     with open(in_filename, 'r') as fp:
-        csvreader = csv.reader(fp)
+        latlon_data = fp.readlines()
 
     data = []
-    for row in csvreader:
-        easting, northing, zone_number, zone_letter = utm.from_latlon(latitude=float(row[0]), longitude=float(row[1]))
+    for row in latlon_data:
+        lat, long = [float(val) for val in row.split(',')]
+        easting, northing, zone_number, zone_letter = utm.from_latlon(latitude=lat, longitude=long)
         data.append([easting, northing, zone_number, zone_letter])
 
     with open(out_filename, 'w') as fp_out:
         for point in data:
-            print(f"{point[0]}, {point[1]}, {point[2]}, {point[3]}", file = fp_out)
+            print(f"{point[0]:.2f}, {point[1]:.2f}, {point[2]}, {point[3]}", file = fp_out)
 
 
 if __name__ == '__main__':

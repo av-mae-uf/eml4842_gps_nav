@@ -7,7 +7,6 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Int8
-from std_msgs.msg import Int16
 
 from gps_nav_interfaces.msg import CurrentGoalPose
 
