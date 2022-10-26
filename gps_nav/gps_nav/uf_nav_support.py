@@ -22,7 +22,7 @@ class myState(Enum):
   LOOP         = 13
 
 class route_pose_class:
-  def __init__(self, pt=[0.0, 0.0, 0.0], heading_rad=0.0, state='a', w1_for_subsequent_segment=1.0, w2_for_subsequent_segment=1.0):
+  def __init__(self, pt=[0.0, 0.0, 0.0], heading_rad=0.0, state=0, w1_for_subsequent_segment=1.0, w2_for_subsequent_segment=1.0):
     self.pt = pt
     self.heading_rad = heading_rad
     self.state = state
