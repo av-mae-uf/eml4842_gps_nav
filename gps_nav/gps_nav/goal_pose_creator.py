@@ -1,4 +1,12 @@
+import sys
+import math
+
+import numpy as np
 from pickletools import read_bytes1, read_bytes4
+import rclpy
+from rclpy.node import Node
+
+from tf2_ros import TransformBroadcaster
 from gps_nav_interfaces.srv import GetRoutePoses
 from gps_nav_interfaces.msg import CurrentGoalPose
 from gps_nav_interfaces.msg import LookAheadSpecs
@@ -7,16 +15,8 @@ from geometry_msgs.msg import TransformStamped
 from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker
 
-from gps_nav.uf_nav_support import *
-
-from tf2_ros import TransformBroadcaster
-
-import sys
-import rclpy
-from rclpy.node import Node
-
-import math
-import numpy as np
+# from gps_nav.uf_nav_support import *
+import gps_nav.uf_nav_support as uf_nav
 
 D2R = math.pi/180.0
 R2D = 180.0/math.pi
@@ -39,12 +39,10 @@ class GoalPoseCreator(Node):
         # subscribe to 'vehicle_pose' topic
         self.subscription_vehicle_pose = self.create_subscription(
             PoseStamped, 'vehicle_pose', self.vehicle_pose_callback, 1) #was 10
-        self.subscription_vehicle_pose  # prevent unused variable warning
 
         # subscribe to 'look_ahead_specs' topic
         self.subscription_look_ahead_specs = self.create_subscription(
             LookAheadSpecs, 'look_ahead_specs', self.look_ahead_specs_callback, 10)
-        self.subscription_look_ahead_specs  # prevent unused variable warning
 
         # prepare to publish 'current_goal_pose' topic
         self.publisher_current_goal_pose = self.create_publisher(
@@ -79,14 +77,14 @@ class GoalPoseCreator(Node):
             self.br = TransformBroadcaster(self)
 
         # define variables
-        self.speed = 0.0              # initial value of 0
-        self.look_ahead_dist = 8.0    # default distance of 8.0
-        self.g_xUTM = 0.0
-        self.g_yUTM = 0.0
+        self.speed = 0.0            # meters/second
+        self.look_ahead_dist = 8.0  # meters
+        self.g_xUTM = 0.0           # meters     
+        self.g_yUTM = 0.0           # meters
 
         self.num_route_segments = 0
         self.route_segments = []
-        self.look_ahead_pose = route_pose_class()
+        self.look_ahead_pose = uf_nav.route_pose_class()
         self.my_closest_pt = np.array([0.0, 0.0, 0.0])
         self.current_seg_num = 0
         self.look_ahead_seg_num = 0
@@ -112,8 +110,9 @@ class GoalPoseCreator(Node):
         self.look_ahead_dist = msg.look_ahead_dist
 
     def vehicle_pose_callback(self, msg):
-        if (not self.ready_to_process):
-            return 0
+        if not self.ready_to_process:
+            return
+        
         self.have_vehicle_pose = True
         self.g_xUTM = msg.pose.position.x
         self.g_yUTM = msg.pose.position.y
@@ -123,7 +122,7 @@ class GoalPoseCreator(Node):
         # print('look_ahead_dist = ', look_ahead_dist,' vehicle_pt = ', vehicle_pt[0], ', ', vehicle_pt[1], ', ', vehicle_pt[2], \
         #      ', current_seg_num = ', self.current_seg_num, ', lenth of route segs = ', len(self.route_segments))
 
-        ans = get_look_ahead_point(
+        ans = uf_nav.get_look_ahead_point(
             self.look_ahead_dist, vehicle_pt, self.route_segments, self.current_seg_num)
 
         self.look_ahead_pose = ans[0]
@@ -132,9 +131,6 @@ class GoalPoseCreator(Node):
         self.look_ahead_seg_num = ans[3]
         self.stop_flag = ans[4]
 
-        #print('current_seg_num = ', self.current_seg_num)
-        #print('closest_pt = ', self.my_closest_pt)
-        #print('look_ahead_pt = ', self.look_ahead_pose.pt)
 
         # publish the current_goal_pose topic message
         out_msg = CurrentGoalPose()
@@ -237,7 +233,7 @@ class GoalPoseCreator(Node):
             for i in range(len(self.route_segments)):
                 for j in range(50):
                     p = Point()
-                    pt = get_point_on_route(self.route_segments[i], j/50.)
+                    pt = uf_nav.get_point_on_route(self.route_segments[i], j/50.)
                     p.x = pt[0]
                     p.y = pt[1]
                     p.z = pt[2]
@@ -263,16 +259,15 @@ def main(args=None):
                     'Service call failed %r' % (e,))
             else:
                 num_poses = response.num_route_poses
+                last_pose = response.mypose[-1]
                 goal_pose_creator.get_logger().info(
-                    'Goal Pose Creator received %d poses.  Last pt = %lf, %lf, %lf' % (num_poses,
-                                                                                    response.mypose[num_poses - 1].position.x,
-                                                                                    response.mypose[num_poses - 1].position.y,
-                                                                                    response.mypose[num_poses - 1].position.z))
+                    f"Goal Pose Creator received {num_poses} poses. " + \
+                    f"Last pt = {last_pose.position.x}, {last_pose.position.y}, {last_pose.position.z}")
 
                 # create the route_poses array
-                for i in range(num_poses):
-                    ptx = response.mypose[i].position.x
-                    pty = response.mypose[i].position.y
+                for i, pose in enumerate(response.mypose):
+                    ptx = pose.position.x
+                    pty = pose.position.y
                     ptz = response.mypose[i].position.z
                     qw = response.mypose[i].orientation.w
                     qx = response.mypose[i].orientation.x
@@ -282,13 +277,13 @@ def main(args=None):
                     myheadingrad = 2.0*math.atan2(qz, qw)
                     myw1 = 1.0
                     myw2 = 1.0
-                    route_poses.append(route_pose_class(
+                    route_poses.append(uf_nav.route_pose_class(
                         np.array([ptx, pty, ptz]), myheadingrad, mystate, myw1, myw2))
                     print(route_poses[i].pt[0], route_poses[i].pt[1], route_poses[i].pt[2], route_poses[i].heading_rad*180.0/math.pi, route_poses[i].state, route_poses[i].w1_for_subsequent_segment, route_poses[i].w2_for_subsequent_segment)
 
                 # create the route_segments array
                 goal_pose_creator.want_loop = response.want_loop
-                goal_pose_creator.route_segments = create_route_segments(route_poses, goal_pose_creator.want_loop)
+                goal_pose_creator.route_segments = uf_nav.create_route_segments(route_poses, goal_pose_creator.want_loop)
 
                 goal_pose_creator.get_logger().info('Goal Pose creator made %d route segments.' %
                                                  len(goal_pose_creator.route_segments))
