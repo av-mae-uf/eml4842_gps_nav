@@ -38,9 +38,7 @@ class RoutePoseProvider(Node):
 
         response.num_route_poses = num_poses
         response.want_loop = self.want_loop   # will be sending the value of the parameter (0 or 1)
-
         response.state_dictionary = self.state_defs
-
         response.offset_x = 0.0
         response.offset_y = 0.0
 
@@ -73,10 +71,8 @@ def main(args=None):
         route_poses.pop(0)
 
     for route_pose in route_poses:
-        
-        # Cast each comma seperate value as a float, then unpack
+        # Cast each comma seperated value as a float, then unpack the list
         easting, northing, heading, state = [float(val) for val in route_pose.split(',')]
-        
         heading_rad = heading * math.pi/180.0
 
         route_pose_provider.route_pose.append(route_pose_class(np.array([easting, northing, 0.0]), heading_rad, int(state)))
