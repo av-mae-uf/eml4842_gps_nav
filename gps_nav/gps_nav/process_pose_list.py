@@ -14,6 +14,7 @@ import sys
 import math
 import numpy as np
 import csv
+import matplotlib.pyplot as plt
 
 from gps_nav.uf_nav_support import *
 
@@ -65,6 +66,13 @@ def main():
         route_segments = create_route_segments(route_poses, want_loop)
         print('Num of route segments = ', len(route_segments))
 
+        xvals = []
+        yvals = []
+        xp_vals = []
+        yp_vals = []
+        heading_vals_deg = []
+        curvature_vals = []
+
         cnt = 0
         num_on_seg = 20
         for seg in route_segments:
@@ -82,6 +90,28 @@ def main():
                 heading_deg = get_heading_rad_at_u(seg, u) * 180.0/math.pi
                 radius_of_curvature = get_radius_at_u(seg, u)
                 print(cnt, ', ', u, ', ', pt[0], ', ', pt[1], ', ', heading_deg, ', ', radius_of_curvature, ', ', pose_point, file = fp_out)
+                xvals.append(pt[0])
+                yvals.append(pt[1])
+                heading_vals_deg.append(heading_deg)
+                curvature_vals.append(1.0/radius_of_curvature)
+                if pose_point == 1:
+                    xp_vals.append(pt[0])
+                    yp_vals.append(pt[1])
+
+        fig, ax = plt.subplots()
+        ax.axis('equal')
+        ax.plot(xvals, yvals)
+        ax.scatter(xp_vals, yp_vals, color='red')
+
+        fig2, ax2 = plt.subplots()
+        ax2.set_title('heading, degrees')
+        ax2.plot(range(0,len(heading_vals_deg)),heading_vals_deg )
+
+        fig3, ax3 = plt.subplots()
+        ax3.set_title('curvature, m^-1')
+        ax3.plot(range(len(curvature_vals)), curvature_vals)
+        
+        plt.show()
 
     except IOError:
         print('Error: The output file ' + out_filename + ' could not be created.')
