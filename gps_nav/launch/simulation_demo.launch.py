@@ -10,7 +10,6 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='gps_nav',
-            #namespace='gps_nav',
             executable='route_pose_provider',
             name='route_pose_provider',
             parameters = [
@@ -21,7 +20,6 @@ def generate_launch_description():
         ),
         Node(
             package='gps_nav',
-            #namespace='gps_nav',
             executable='goal_pose_creator',
             name='goal_pose_creator',
             output='screen',
@@ -31,7 +29,6 @@ def generate_launch_description():
         ),
         Node(
             package='gps_nav',
-            #namespace='gps_nav',
             executable='vehicle_controller',
             name='vehicle_controller',
             output='screen' 
@@ -39,7 +36,6 @@ def generate_launch_description():
 
         Node(
             package='gps_nav',
-            #namespace='gps_nav',
             executable='vehicle_simulator',
             name='vehicle_simulator',
             output='screen',
@@ -51,7 +47,6 @@ def generate_launch_description():
 
         Node(
             package='gps_nav',
-            #namespace='gps_nav',
             executable='motion_spec_provider',
             name='motion_spec_provider',
             output='screen',
@@ -63,7 +58,6 @@ def generate_launch_description():
 
         Node(
             package='tf2_ros',
-            #namespace='tf2_ros',
             executable='static_transform_publisher',
             name='cdc_tf',
             arguments=["0", "0", "0", "0", "0", "0", "map", "my_frame"]
@@ -74,8 +68,7 @@ def generate_launch_description():
             namespace='rviz2',
             executable='rviz2',
             name='rviz2',
-                #arguments=["-d ~/dev_ws_2022/src/gps_nav/rviz/bandshell_1_rviz.rviz"]
-                arguments=["-d", config_dir + "/rviz/bandshell_1_rviz.rviz"]
+            arguments=["-d", config_dir + "/rviz/bandshell_1_rviz.rviz"]
 
         )
     ])

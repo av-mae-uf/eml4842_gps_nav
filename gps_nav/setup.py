@@ -12,7 +12,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', glob('launch/*launch*.py')),   # added so that launch files will be copied globally
+        ('share/' + package_name + '/launch', glob('launch/*.launch.py')),   # added so that launch files will be copied globally
         ('share/' + package_name+ '/my_data', glob('my_data/pose_list.txt')),  # change for opening the data file
         ('share/' + package_name+ '/my_data/stockpile', glob('my_data/stockpile/*.txt')),
         ('share/' + package_name+ '/rviz', glob('rviz/*.rviz')),  # copy rviz config files
