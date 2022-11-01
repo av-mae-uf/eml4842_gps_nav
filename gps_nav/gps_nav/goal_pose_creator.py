@@ -24,9 +24,6 @@ class GoalPoseCreator(Node):
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
         self.req = GetRoutePoses.Request()
-
-        # the default condition is true ; send data to rviz
-        self.declare_parameter('send_to_rviz', True)
           
         # subscribe to 'vehicle_pose' topic
         self.subscription_vehicle_pose = self.create_subscription(
