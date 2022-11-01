@@ -10,7 +10,7 @@ from std_msgs.msg import Int8
 
 from gps_nav_interfaces.msg import CurrentGoalPose
 
-from gps_nav.uf_nav_support import get_rad_of_curvature_to_carrot
+from gps_nav.uf_support.route_support import get_rad_of_curvature_to_carrot
 
 
 class VehicleController(Node):

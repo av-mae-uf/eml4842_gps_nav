@@ -1,6 +1,6 @@
 # gps_nav
 The following figure depicts all the nodes, topics, and messages that are used in the gps_nav package.
-![gps_nav package](./gps_nav/images/gps_nav.jpg)
+![gps_nav package](./gps_nav/data/images/gps_nav.jpg)
 ### Information
 - Nodes are shown in ellipses.
 - Topics are shown using lines with arrows.

@@ -5,8 +5,7 @@ import rclpy
 from rclpy.node import Node
 from ament_index_python.packages import get_package_share_directory
 
-from gps_nav.uf_nav_support import *
-from gps_nav.uf_support import *
+from gps_nav.uf_support.route_support import route_pose_class
 
 from gps_nav_interfaces.srv import GetRoutePoses 
 
@@ -25,12 +24,17 @@ class RoutePoseProvider(Node):
         self.pose_filename = self.get_parameter('pose_filename').value
         self.state_defs = self.get_parameter('state_defs').value
 
-        self.route_pose = []
+        self.read_in_route = False
+        self.route_poses = []
 
     def get_route_poses_callback(self, request, response):
         self.get_logger().info("Incoming request for route.")
 
-        num_poses = len(self.route_pose)
+        if(self.read_in_route == False):
+            self.get_logger().warn(f"Route has been requested before file has been read!")
+            return
+
+        num_poses = len(self.route_poses)
   
         if num_poses > 300:
             self.get_logger().warn(f"Route contains over 300 poses. Unable to complete request")
@@ -61,13 +65,17 @@ def main(args=None):
 
     route_pose_provider = RoutePoseProvider()
 
-    filename = get_package_share_directory('gps_nav') + '/my_data/' + route_pose_provider.pose_filename
+    if route_pose_provider.pose_filename == 'pose_list.txt':
+        filename = get_package_share_directory('gps_nav') + '/my_data/' + route_pose_provider.pose_filename
+    else:
+        filename = route_pose_provider.pose_filename
 
     with open(filename, "r") as fp:
         route_pose_provider.get_logger().info(f"Opened the file: {filename}")
         route_poses = fp.readlines()
 
-    if '#' in route_poses[0] or '\n' in route_poses[0]:
+    if '#' in route_poses[0]:
+        route_pose_provider.get_logger().info(f"Comment line found. Ignored.")
         route_poses.pop(0)
 
     for route_pose in route_poses:
@@ -75,7 +83,9 @@ def main(args=None):
         easting, northing, heading, state = [float(val) for val in route_pose.split(',')]
         heading_rad = heading * math.pi/180.0
 
-        route_pose_provider.route_pose.append(route_pose_class(np.array([easting, northing, 0.0]), heading_rad, int(state)))
+        route_pose_provider.route_poses.append(route_pose_class(np.array([easting, northing, 0.0]), heading_rad, int(state)))
+    
+    route_pose_provider.read_in_route = True
                     
     rclpy.spin(route_pose_provider)
 

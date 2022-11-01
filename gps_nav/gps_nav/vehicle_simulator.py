@@ -3,12 +3,11 @@ import numpy as np
 
 import rclpy
 from rclpy.node import Node
+from tf2_ros import TransformBroadcaster
 
-from geometry_msgs.msg import PoseStamped
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, PoseStamped, TransformStamped
 
-from gps_nav.uf_nav_support import update_vehicle_pose
-from gps_nav.uf_support import *
+from gps_nav.uf_support.route_support import update_vehicle_pose
 
 class VehicleSimulator(Node):
 
@@ -21,9 +20,12 @@ class VehicleSimulator(Node):
         self.subscription = self.create_subscription(
             Twist, 'vehicle_command',
             self.vehicle_command_callback,
-            10)
+            1)
 
-        self.publisher = self.create_publisher(PoseStamped, 'vehicle_pose', 1)
+        self.publisher = self.create_publisher(PoseStamped, 'vehicle_pose', 10)
+
+        # Initialize the transform broadcaster
+        self.br = TransformBroadcaster(self)
 
         self.timer = self.create_timer(timer_period_sec=0.1, callback=self.timer_callback)
 
@@ -42,7 +44,7 @@ class VehicleSimulator(Node):
 
     def vehicle_command_callback(self, msg):
 
-        if (math.isclose(msg.angular.z, 0.0, 0.0001) or math.isclose(msg.linear.x, 0.0, 0.001)):
+        if (math.isclose(msg.angular.z, 0.0, abs_tol=0.0001) or math.isclose(msg.linear.x, 0.0, abs_tol=0.001)):
             self.rad_of_curvature = 999999.9
         else:
             self.rad_of_curvature = msg.linear.x / msg.angular.z
@@ -59,7 +61,7 @@ class VehicleSimulator(Node):
 
         msg = PoseStamped()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = 'my_frame'
+        msg.header.frame_id = 'utm'
         msg.pose.position.x = new_position[0]
         msg.pose.position.y = new_position[1]
         msg.pose.position.z = new_position[2]
@@ -69,6 +71,25 @@ class VehicleSimulator(Node):
         msg.pose.orientation.z = math.sin(math.pi / 180.0 * new_heading_deg / 2.0)
        
         self.publisher.publish(msg)
+
+        # send out the tf2 for the vehicle pose
+        t = TransformStamped()
+
+        t.header.stamp = msg.header.stamp
+        t.header.frame_id = 'utm'
+        t.child_frame_id = 'vehicle'
+
+        t.transform.translation.x = msg.pose.position.x
+        t.transform.translation.y = msg.pose.position.y
+        t.transform.translation.z = msg.pose.position.z
+
+        t.transform.rotation.x = msg.pose.orientation.x
+        t.transform.rotation.y = msg.pose.orientation.y
+        t.transform.rotation.z = msg.pose.orientation.z
+        t.transform.rotation.w = msg.pose.orientation.w
+
+        # Send the transformation
+        self.br.sendTransform(t)
 
         self.old_position = new_position
         self.old_heading_deg = new_heading_deg
