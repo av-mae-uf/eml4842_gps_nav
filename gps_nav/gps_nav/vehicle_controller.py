@@ -26,7 +26,7 @@ class VehicleController(Node):
         self.subscription3 = self.create_subscription(
             Int8, 'e_stop', self.e_stop_callback, 10)
 
-        self.publisher = self.create_publisher(Twist, 'vehicle_command', 10)
+        self.publisher = self.create_publisher(Twist, 'vehicle_command_twist', 10)
         
         # set up the timer (0.1 sec) to send over the current_carrot message to the vehicle controller
         self.main_timer = self.create_timer(timer_period_sec=0.1, callback=self.main_timer_callback)

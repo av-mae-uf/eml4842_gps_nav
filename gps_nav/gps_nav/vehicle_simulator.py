@@ -18,7 +18,7 @@ class VehicleSimulator(Node):
         self.declare_parameter('starting_ang_deg', 190.0)
 
         self.subscription = self.create_subscription(
-            Twist, 'vehicle_command',
+            Twist, 'vehicle_command_twist',
             self.vehicle_command_callback,
             1)
 
