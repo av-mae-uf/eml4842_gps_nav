@@ -3,11 +3,8 @@ import numpy as np
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, QoSDurabilityPolicy
 
-from tf2_ros import TransformBroadcaster
 from geometry_msgs.msg import PoseStamped
-from geometry_msgs.msg import TransformStamped
 from gps_nav_interfaces.srv import GetRoutePoses
 from gps_nav_interfaces.msg import CurrentGoalPose, LookAheadSpecs
 
@@ -27,7 +24,7 @@ class GoalPoseCreator(Node):
           
         # subscribe to 'vehicle_pose' topic
         self.subscription_vehicle_pose = self.create_subscription(
-            PoseStamped, 'vehicle_pose', self.vehicle_pose_callback, 1) #was 10
+            PoseStamped, 'vehicle_pose', self.vehicle_pose_callback, 1)
 
         # subscribe to 'look_ahead_specs' topic
         self.subscription_look_ahead_specs = self.create_subscription(
@@ -85,9 +82,10 @@ class GoalPoseCreator(Node):
         self.look_ahead_seg_num = ans[3]
         self.stop_flag = ans[4]
 
-
         # publish the current_goal_pose topic message
         out_msg = CurrentGoalPose()
+        out_msg.current_goal_pose.header.frame_id = 'utm'
+        out_msg.current_goal_pose.header.stamp = self.get_clock().now().to_msg()
         out_msg.current_goal_pose.pose.position.x = self.look_ahead_pose.pt[0]
         out_msg.current_goal_pose.pose.position.y = self.look_ahead_pose.pt[1]
         out_msg.current_goal_pose.pose.position.z = self.look_ahead_pose.pt[2]
@@ -97,6 +95,12 @@ class GoalPoseCreator(Node):
         out_msg.current_goal_pose.pose.orientation.y = 0.0
         out_msg.current_goal_pose.pose.orientation.z = math.sin(
             self.look_ahead_pose.heading_rad/2.0)
+
+        out_msg.closest_pose.header.frame_id = 'utm'
+        out_msg.closest_pose.header.stamp = out_msg.current_goal_pose.header.stamp
+        out_msg.closest_pose.pose.position.x = self.my_closest_pt[0]
+        out_msg.closest_pose.pose.position.y = self.my_closest_pt[1]
+        out_msg.closest_pose.pose.position.z = self.my_closest_pt[2]
         
         out_msg.state = int(self.route_segments[self.current_seg_num].state)
 

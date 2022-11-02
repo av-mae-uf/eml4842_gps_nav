@@ -78,10 +78,9 @@ class VehicleController(Node):
             self.speed = -2.5
 
     def e_stop_callback(self, msg):
-        # PN - Is this functional?
-        if (msg.pause0_continue1 == 0):
+        if (msg.data == 0):
             self.pause = True
-        elif (msg.pause0_continue1 == 1):
+        elif (msg.data == 1):
             self.pause = False
 
     def main_timer_callback(self):

@@ -1,14 +1,8 @@
-#!/usr/bin/python3
-
-# Python Imports
-import math
-import numpy as np
-
 # ROS2 Imports
 import rclpy
 from rclpy.node import Node
 
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PointStamped
 
 # Custom Imports
 from gps_nav_interfaces.msg import CurrentGoalPose
@@ -23,26 +17,23 @@ class GoalPoseVisualizer(Node):
 
         # prepare to publish the 'closest_point' topic for rviz
         self.publisher_closest_point = self.create_publisher(
-            PoseStamped, 'closest_point_to_rviz', 1)
+            PointStamped, 'closest_point', 1)
 
         # prepare to publish the 'look_ahead_pose' topic for rviz
         self.publisher_look_ahead_pose = self.create_publisher(
-            PoseStamped, 'look_ahead_pose_to_rviz', 1)
+            PoseStamped, 'look_ahead_pose', 1)
 
     def goal_pose_callback(self, msg):
 
-         # publish the 'closet_point' topic to rviz
-        closest_pose = PoseStamped()
-        closest_pose.header.frame_id = 'utm'
-        closest_pose.header.stamp = msg.closest_pose.header.stamp
-        closest_pose.pose.position.x = msg.closest_pose.pose.position.x
-        closest_pose.pose.position.y = msg.closest_pose.pose.position.y
-        closest_pose.pose.position.z = msg.closest_pose.pose.position.z
-        closest_pose.pose.orientation.w = 1.0
-        closest_pose.pose.orientation.x = 0.0
-        closest_pose.pose.orientation.y = 0.0
-        closest_pose.pose.orientation.z = 0.0
-        self.publisher_closest_point.publish(closest_pose)
+        # publish the 'closet_point' topic to rviz
+        closest_point = PointStamped()
+        closest_point.header.frame_id = 'utm'
+        closest_point.header.stamp = msg.closest_pose.header.stamp
+        closest_point.point.x = msg.closest_pose.pose.position.x
+        closest_point.point.y = msg.closest_pose.pose.position.y
+        closest_point.point.z = msg.closest_pose.pose.position.z
+
+        self.publisher_closest_point.publish(closest_point)
 
         # publish the 'look_ahead_pose' topic to rviz
         look_ahead_pose = PoseStamped()

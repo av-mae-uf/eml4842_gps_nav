@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 # Python Imports
 import math
 import numpy as np
@@ -9,9 +7,9 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
+
 from std_msgs.msg import ColorRGBA
-from geometry_msgs.msg import Pose, Point
-from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
+from geometry_msgs.msg import Point, TransformStamped
 from visualization_msgs.msg import Marker, MarkerArray
 
 # Custom Imports

@@ -105,5 +105,6 @@ def main(args=None):
     vehicle_simulator.destroy_node()
     rclpy.shutdown()
 
+
 if __name__ == '__main__':
     main()

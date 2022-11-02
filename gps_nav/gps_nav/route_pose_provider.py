@@ -66,7 +66,7 @@ def main(args=None):
     route_pose_provider = RoutePoseProvider()
 
     if route_pose_provider.pose_filename == 'pose_list.txt':
-        filename = get_package_share_directory('gps_nav') + '/my_data/' + route_pose_provider.pose_filename
+        filename = get_package_share_directory('gps_nav') + '/data/' + route_pose_provider.pose_filename
     else:
         filename = route_pose_provider.pose_filename
 
