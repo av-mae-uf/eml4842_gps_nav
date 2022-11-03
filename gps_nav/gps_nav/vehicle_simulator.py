@@ -6,6 +6,7 @@ from rclpy.node import Node
 from tf2_ros import TransformBroadcaster
 
 from geometry_msgs.msg import Twist, PoseStamped, TransformStamped
+from gps_nav_interfaces.msg import VehCmd   # must be same message format as av1tenth drive_interfaces
 
 from gps_nav.uf_support.route_support import update_vehicle_pose
 
@@ -16,10 +17,16 @@ class VehicleSimulator(Node):
 
         self.declare_parameter('starting_position', [0.0, 0.0, 0.0])
         self.declare_parameter('starting_ang_deg', 190.0)
+        self.declare_parameter('L_wheelbase_m', 0.33)
 
-        self.subscription = self.create_subscription(
+        self.subscription_twist = self.create_subscription(
             Twist, 'vehicle_command_twist',
-            self.vehicle_command_callback,
+            self.vehicle_command_twist_callback,
+            1)
+        
+        self.subscription_angle = self.create_subscription(
+            VehCmd, 'vehicle_command_angle',
+            self.vehicle_command_angle_callback,
             1)
 
         self.publisher = self.create_publisher(PoseStamped, 'vehicle_pose', 10)
@@ -37,12 +44,20 @@ class VehicleSimulator(Node):
         self.old_position[2] = param_value[2]
 
         self.old_heading_deg = self.get_parameter('starting_ang_deg').value
+        self.L_wheelbase_m = self.get_parameter('L_wheelbase_m').value
 
         self.rad_of_curvature = 99999.0
         self.speed = 0.0
         self.cnt = 0
 
-    def vehicle_command_callback(self, msg):
+        self.steering_angle = 0.0
+        self.throttle_effort = 0.0
+
+        self.input_type = 0    # 0 is undefined; 1 is twist input ; 2 is effort (angle) input 
+
+    def vehicle_command_twist_callback(self, msg):
+
+        self.input_type = 1 
 
         if (math.isclose(msg.angular.z, 0.0, abs_tol=0.0001) or math.isclose(msg.linear.x, 0.0, abs_tol=0.001)):
             self.rad_of_curvature = 999999.9
@@ -51,14 +66,28 @@ class VehicleSimulator(Node):
         
         self.speed = msg.linear.x
         self.cnt +=1
+    
+    def vehicle_command_angle_callback(self, msg):
+
+        self.input_type = 2
+
+        self.steering_angle_deg = msg.steering_angle
+        self.throttle_effort = msg.throttle_effort
+        self.cnt +=1
 
     def timer_callback(self):
         # PN - Is this here because the parameter might not be updated by the time a control is received?
+        # CC - At the start, the initial 'old_heading_deg' must be  set to some value
         if(self.cnt < 1):
             self.old_heading_deg = self.get_parameter('starting_ang_deg').value
 
-        new_position, new_heading_deg = update_vehicle_pose(self.old_position, self.old_heading_deg, self.rad_of_curvature, self.speed/10.0)
+        if self.input_type == 2:
+            # get radius of curvature and speed from VehCmd message info
+            self.rad_of_curvature =  self.L_wheelbase_m/math.tan(self.steering_angle_deg) 
+            self.speed = self.throttle_effort * 2.0 / 10.0
 
+        new_position, new_heading_deg = update_vehicle_pose(self.old_position, self.old_heading_deg, self.rad_of_curvature, self.speed/10.0)
+        
         msg = PoseStamped()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = 'utm'

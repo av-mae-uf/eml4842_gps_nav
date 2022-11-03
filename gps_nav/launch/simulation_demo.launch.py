@@ -49,7 +49,8 @@ def generate_launch_description():
             output='screen',
             parameters = [
                 {'starting_position': [368964.0, 3280351.0, 0.0]},  # UTM coords + 10 E from path start
-                {'starting_ang_deg': 193.0}
+                {'starting_ang_deg': 193.0},
+                {'L_wheelbase_m': 0.33}  # dist between axles in meters
             ] 
         ),
         Node(

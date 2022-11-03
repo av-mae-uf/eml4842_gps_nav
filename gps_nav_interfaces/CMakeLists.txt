@@ -18,6 +18,7 @@ find_package(std_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/CurrentGoalPose.msg"
   "msg/LookAheadSpecs.msg"
+  "msg/VehCmd.msg"
   "srv/GetRoutePoses.srv"
   DEPENDENCIES geometry_msgs std_msgs # Add packages that above messages depend on
 )
