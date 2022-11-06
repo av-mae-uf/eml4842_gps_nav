@@ -10,6 +10,9 @@ from gps_nav_interfaces.msg import VehCmd   # must be same message format as av1
 
 from gps_nav.uf_support.route_support import update_vehicle_pose
 
+D2R = math.pi/180.0
+R2D = 1.0/D2R
+
 class VehicleSimulator(Node):
 
     def __init__(self):
@@ -43,14 +46,14 @@ class VehicleSimulator(Node):
         self.old_position[1] = param_value[1]
         self.old_position[2] = param_value[2]
 
-        self.old_heading_deg = self.get_parameter('starting_ang_deg').value
+        self.old_heading_rad = D2R*self.get_parameter('starting_ang_deg').value
         self.L_wheelbase_m = self.get_parameter('L_wheelbase_m').value
 
         self.rad_of_curvature = 99999.0
         self.speed = 0.0
         self.cnt = 0
 
-        self.steering_angle = 0.0
+        self.steering_angle_rad = 0.0
         self.throttle_effort = 0.0
 
         self.input_type = 0    # 0 is undefined; 1 is twist input ; 2 is effort (angle) input 
@@ -71,22 +74,22 @@ class VehicleSimulator(Node):
 
         self.input_type = 2
 
-        self.steering_angle_deg = msg.steering_angle
+        self.steering_angle_rad = msg.steering_angle
         self.throttle_effort = msg.throttle_effort
         self.cnt +=1
 
     def timer_callback(self):
         # PN - Is this here because the parameter might not be updated by the time a control is received?
-        # CC - At the start, the initial 'old_heading_deg' must be  set to some value
+        # CC - At the start, the initial 'old_heading_rad' must be  set to some value
         if(self.cnt < 1):
-            self.old_heading_deg = self.get_parameter('starting_ang_deg').value
+            self.old_heading_rad = D2R*self.get_parameter('starting_ang_deg').value
 
         if self.input_type == 2:
             # get radius of curvature and speed from VehCmd message info
-            self.rad_of_curvature =  self.L_wheelbase_m/math.tan(self.steering_angle_deg) 
-            self.speed = self.throttle_effort * 2.0 / 10.0
+            self.rad_of_curvature =  self.L_wheelbase_m/math.tan(self.steering_angle_rad) 
+            self.speed = self.throttle_effort * 4.0 / 100.0  # max speed is 4 m/sec
 
-        new_position, new_heading_deg = update_vehicle_pose(self.old_position, self.old_heading_deg, self.rad_of_curvature, self.speed/10.0)
+        new_position, new_heading_rad = update_vehicle_pose(self.old_position, self.old_heading_rad, self.rad_of_curvature, self.speed/10.0)
         
         msg = PoseStamped()
         msg.header.stamp = self.get_clock().now().to_msg()
@@ -94,10 +97,10 @@ class VehicleSimulator(Node):
         msg.pose.position.x = new_position[0]
         msg.pose.position.y = new_position[1]
         msg.pose.position.z = new_position[2]
-        msg.pose.orientation.w = math.cos(math.pi / 180.0 * new_heading_deg / 2.0)
+        msg.pose.orientation.w = math.cos(new_heading_rad / 2.0)
         msg.pose.orientation.x = 0.0
         msg.pose.orientation.y = 0.0
-        msg.pose.orientation.z = math.sin(math.pi / 180.0 * new_heading_deg / 2.0)
+        msg.pose.orientation.z = math.sin(new_heading_rad / 2.0)
        
         self.publisher.publish(msg)
 
@@ -121,7 +124,7 @@ class VehicleSimulator(Node):
         self.br.sendTransform(t)
 
         self.old_position = new_position
-        self.old_heading_deg = new_heading_deg
+        self.old_heading_rad = new_heading_rad
 
 
 def main(args=None):

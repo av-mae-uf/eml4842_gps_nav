@@ -408,16 +408,16 @@ def get_radius_at_u_equals_0(route_segment:route_segment_class):
 
   return radius_of_curvature
 #########################################################################
-def update_vehicle_pose(old_position, old_heading_deg, rad_of_curvature, speed):
+def update_vehicle_pose(old_position, old_heading_rad, rad_of_curvature, speed):
 # outputs - new_position, np.array of floats
-#           new_heading_deg, rad_of_curvature, speed, float
-  #print(old_position, old_heading_deg, rad_of_curvature, speed)
+#           new_heading_rad, rad_of_curvature, speed, float
+  #print(old_position, old_heading_rad, rad_of_curvature, speed)
   if (abs(rad_of_curvature) >= 150.0):
-    Svec = np.array([math.cos(D2R*old_heading_deg), math.sin(D2R*old_heading_deg), 0.0])
+    Svec = np.array([math.cos(old_heading_rad), math.sin(old_heading_rad), 0.0])
     new_position = old_position + speed * Svec
-    new_heading_deg = old_heading_deg
+    new_heading_rad = old_heading_rad
   else:
-    rear_axle_dir_rad = (old_heading_deg + 90.0)*D2R
+    rear_axle_dir_rad = old_heading_rad + 90.0*D2R
     center_pt = np.array([old_position[0] + rad_of_curvature * math.cos(rear_axle_dir_rad), \
                           old_position[1] + rad_of_curvature * math.sin(rear_axle_dir_rad), \
                           0.0])
@@ -427,7 +427,7 @@ def update_vehicle_pose(old_position, old_heading_deg, rad_of_curvature, speed):
     radius = np.linalg.norm(Svec)
     rotation_ang_rad = speed / radius  # speed represents dist to trave in this time step
 
-    new_heading_deg = old_heading_deg + (direction * rotation_ang_rad)*R2D
+    new_heading_rad = old_heading_rad + (direction * rotation_ang_rad)
 
     if (direction == 1):  # left turn
       temp = np.array([Svec[0] *math.cos(rotation_ang_rad) - Svec[1]*math.sin(rotation_ang_rad), \
@@ -440,7 +440,7 @@ def update_vehicle_pose(old_position, old_heading_deg, rad_of_curvature, speed):
                         0.0])
       new_position = center_pt + temp
 
-  return [new_position, new_heading_deg]
+  return [new_position, new_heading_rad]
 
 #########################################################################  
 def get_rad_of_curvature_to_carrot(vehicle_point, vehicle_heading_rad, look_ahead_point, look_ahead_heading_rad, p1_ratio):
