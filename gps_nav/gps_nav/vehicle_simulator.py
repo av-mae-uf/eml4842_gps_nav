@@ -6,7 +6,7 @@ from rclpy.node import Node
 from tf2_ros import TransformBroadcaster
 
 from geometry_msgs.msg import Twist, PoseStamped, TransformStamped
-from gps_nav_interfaces.msg import VehCmd  # must be same message format as av1tenth drive_interfaces
+from drive_interfaces.msg import VehCmd  # must be same message format as av1tenth drive_interfaces
 
 from gps_nav.uf_support.route_support import update_vehicle_pose
 
