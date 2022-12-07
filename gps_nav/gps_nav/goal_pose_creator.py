@@ -101,7 +101,13 @@ class GoalPoseCreator(Node):
         out_msg.closest_pose.pose.position.x = self.my_closest_pt[0]
         out_msg.closest_pose.pose.position.y = self.my_closest_pt[1]
         out_msg.closest_pose.pose.position.z = self.my_closest_pt[2]
-        
+
+        heading_at_closest_rad = uf_nav.get_heading_rad_at_u(self.route_segments[self.current_seg_num], 0.0)
+        out_msg.closest_pose.pose.orientation.w = math.cos(heading_at_closest_rad/2.0)
+        out_msg.closest_pose.pose.orientation.x = 0.0
+        out_msg.closest_pose.pose.orientation.y = 0.0
+        out_msg.closest_pose.pose.orientation.z = math.sin(heading_at_closest_rad/2.0)
+
         out_msg.state = int(self.route_segments[self.current_seg_num].state)
 
         if(self.want_loop == False and self.current_seg_num == self.num_route_segments-1):
