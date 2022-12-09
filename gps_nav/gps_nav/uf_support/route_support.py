@@ -225,7 +225,7 @@ def get_look_ahead_point(look_ahead_dist:float, \
                         ) :
                         #)->list[
                         #        route_pose_class, \
-                        #        np.array, \
+                        #        route_pose_class, \
                         #        int, \
                         #        int, \
                         #        int]:
@@ -241,7 +241,7 @@ def get_look_ahead_point(look_ahead_dist:float, \
   #
   # outputs -
   #     look_ahead_pose:route_pose_class, 
-  #     my_closest_pt:np.array(), 
+  #     closest_pose: route_pose_class,
   #     veh_seg_num:int, 
   #     look_ahead_seg_num:int, 
   #     stop_flag:int       Equals 1 if veh_seg_num has a state of END_PLUS_ONE
@@ -282,6 +282,7 @@ def get_look_ahead_point(look_ahead_dist:float, \
 
     # get the coordinates of the closest point
     my_closest_pt = get_point_on_route(route_segments[veh_seg_num], my_uval)
+    closest_heading_rad = get_heading_rad_at_u(route_segments[veh_seg_num], my_uval)
 
     # now get the look_ahead pose
     used_up_length = get_route_length_to_u(route_segments[veh_seg_num],my_uval)
@@ -310,16 +311,21 @@ def get_look_ahead_point(look_ahead_dist:float, \
 
     look_ahead_pose = route_pose_class(look_ahead_pt, \
                                      look_ahead_heading_rad, \
-                                     route_segments[veh_seg_num].state, \
-                                     route_segments[veh_seg_num].w1, \
-                                     route_segments[veh_seg_num].w2)
+                                     route_segments[look_ahead_seg_num].state, \
+                                     route_segments[look_ahead_seg_num].w1, \
+                                     route_segments[look_ahead_seg_num].w2)
+    closest_pose = route_pose_class(my_closest_pt, \
+                                    closest_heading_rad, \
+                                    route_segments[veh_seg_num].state, \
+                                    route_segments[veh_seg_num].w1, \
+                                    route_segments[veh_seg_num].w2)
   
   if (route_segments[veh_seg_num].state == myState.END_PLUS_ONE):
     stop_flag = 1  # STOP
   else:
     stop_flag = 0
 
-  return [look_ahead_pose, my_closest_pt, veh_seg_num, look_ahead_seg_num, stop_flag]
+  return [look_ahead_pose, closest_pose, veh_seg_num, look_ahead_seg_num, stop_flag]
 
 
 #########################################################################

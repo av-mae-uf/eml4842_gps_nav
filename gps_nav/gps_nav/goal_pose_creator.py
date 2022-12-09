@@ -43,7 +43,7 @@ class GoalPoseCreator(Node):
         self.num_route_segments = 0
         self.route_segments = []
         self.look_ahead_pose = uf_nav.route_pose_class()
-        self.my_closest_pt = np.array([0.0, 0.0, 0.0])
+        self.closest_pose = uf_nav.route_pose_class()
         self.current_seg_num = 0
         self.look_ahead_seg_num = 0
         self.stop_flag = False
@@ -77,7 +77,7 @@ class GoalPoseCreator(Node):
             self.look_ahead_dist, vehicle_pt, self.route_segments, self.current_seg_num)
 
         self.look_ahead_pose = ans[0]
-        self.my_closest_pt = ans[1]
+        self.closest_pose = ans[1]
         self.current_seg_num = ans[2]
         self.look_ahead_seg_num = ans[3]
         self.stop_flag = ans[4]
@@ -98,9 +98,9 @@ class GoalPoseCreator(Node):
 
         out_msg.closest_pose.header.frame_id = 'utm'
         out_msg.closest_pose.header.stamp = out_msg.current_goal_pose.header.stamp
-        out_msg.closest_pose.pose.position.x = self.my_closest_pt[0]
-        out_msg.closest_pose.pose.position.y = self.my_closest_pt[1]
-        out_msg.closest_pose.pose.position.z = self.my_closest_pt[2]
+        out_msg.closest_pose.pose.position.x = self.closest_pose.pt[0]
+        out_msg.closest_pose.pose.position.y = self.closest_pose.pt[1]
+        out_msg.closest_pose.pose.position.z = self.closest_pose.pt[2]
 
         heading_at_closest_rad = uf_nav.get_heading_rad_at_u(self.route_segments[self.current_seg_num], 0.0)
         out_msg.closest_pose.pose.orientation.w = math.cos(heading_at_closest_rad/2.0)
@@ -108,7 +108,12 @@ class GoalPoseCreator(Node):
         out_msg.closest_pose.pose.orientation.y = 0.0
         out_msg.closest_pose.pose.orientation.z = math.sin(heading_at_closest_rad/2.0)
 
-        out_msg.state = int(self.route_segments[self.current_seg_num].state)
+        out_msg.closest_pose.pose.orientation.w = math.cos(
+            self.closest_pose.heading_rad/2.0)
+        out_msg.closest_pose.pose.orientation.x = 0.0
+        out_msg.closest_pose.pose.orientation.y = 0.0
+        out_msg.closest_pose.pose.orientation.z = math.sin(
+            self.closest_pose.heading_rad/2.0)
 
         if(self.want_loop == False and self.current_seg_num == self.num_route_segments-1):
             out_msg.speed = 0.0
