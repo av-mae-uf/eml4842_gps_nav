@@ -6,7 +6,7 @@ from rclpy.node import Node
 from tf2_ros import TransformBroadcaster
 
 from geometry_msgs.msg import Twist, PoseStamped, TransformStamped
-from drive_interfaces.msg import VehCmd  # must be same message format as av1tenth drive_interfaces
+from ackermann_msgs.msg import AckermannDriveStamped
 
 from gps_nav.uf_support.route_support import update_vehicle_pose
 
@@ -27,7 +27,7 @@ class VehicleSimulator(Node):
         )
 
         self.subscription_angle = self.create_subscription(
-            VehCmd, "vehicle_command_angle", self.vehicle_command_angle_callback, 1
+            AckermannDriveStamped, "vehicle_command_ackermann", self.vehicle_command_ackermann_callback, 1
         )
 
         self.publisher = self.create_publisher(PoseStamped, "vehicle_pose", 10)
@@ -68,12 +68,12 @@ class VehicleSimulator(Node):
         self.speed = msg.linear.x
         self.cnt += 1
 
-    def vehicle_command_angle_callback(self, msg):
+    def vehicle_command_ackermann_callback(self, msg):
 
         self.input_type = 2
 
-        self.steering_angle_rad = msg.steering_angle * (math.pi / 180)
-        self.throttle_effort = msg.throttle_effort
+        self.steering_angle_rad = msg.drive.steering_angle
+        self.throttle_effort = (msg.drive.speed/6.35) *100
         self.cnt += 1
 
     def timer_callback(self):
