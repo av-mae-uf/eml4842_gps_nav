@@ -4,7 +4,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 
-from geometry_msgs.msg import Twist
+from ackermann_msgs.msg import AckermannDriveStamped
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Int8
 
@@ -12,10 +12,12 @@ from gps_nav_interfaces.msg import CurrentGoalPose
 
 from gps_nav.uf_support.route_support import get_rad_of_curvature_to_carrot
 
-
 class VehicleController(Node):
     def __init__(self):
         super().__init__("vehicle_controller")
+
+        self.declare_parameter("L_wheelbase_m", 0.33)
+
         self.subscription1 = self.create_subscription(PoseStamped, "vehicle_pose", self.vehicle_pose_callback, 1)
 
         self.subscription2 = self.create_subscription(
@@ -24,7 +26,7 @@ class VehicleController(Node):
 
         self.subscription3 = self.create_subscription(Int8, "e_stop", self.e_stop_callback, 10)
 
-        self.publisher = self.create_publisher(Twist, "vehicle_command_twist", 10)
+        self.publisher = self.create_publisher(AckermannDriveStamped, "vehicle_command_ackermann", 10)
 
         # set up the timer (0.1 sec) to send over the current_carrot message to the vehicle controller
         self.main_timer = self.create_timer(timer_period_sec=0.1, callback=self.main_timer_callback)
@@ -95,13 +97,9 @@ class VehicleController(Node):
                 self.last_pause_value = True
 
                 # send out a zero velocity twist
-                out_msg = Twist()
-                out_msg.linear.x = 0.0
-                out_msg.linear.y = 0.0
-                out_msg.linear.z = 0.0
-                out_msg.angular.x = 0.0
-                out_msg.angular.y = 0.0
-                out_msg.angular.z = 0.0
+                out_msg = AckermannDriveStamped()
+                out_msg.drive.speed = 0.0
+                out_msg.drive.steering_angle = 0.0
 
                 self.publisher.publish(out_msg)
                 return
@@ -120,13 +118,12 @@ class VehicleController(Node):
 
             zval = 1.9425 / radius_of_curvature - 0.271  # y = 1.9425 * x - 0.271
 
-            out_msg = Twist()
-            out_msg.linear.x = self.speed
-            out_msg.linear.y = 0.0
-            out_msg.linear.z = 0.0
-            out_msg.angular.x = 0.0
-            out_msg.angular.y = 0.0
-            out_msg.angular.z = self.speed * zval
+            self.L_wheelbase_m = self.get_parameter("L_wheelbase_m").value
+
+            out_msg = AckermannDriveStamped()
+            out_msg.drive.speed = self.speed
+            angle_rad = math.atan(self.L_wheelbase_m / radius_of_curvature)
+            out_msg.drive.steering_angle = angle_rad
 
             self.publisher.publish(out_msg)
 

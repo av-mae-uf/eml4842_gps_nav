@@ -39,7 +39,10 @@ def generate_launch_description():
             package='gps_nav',
             executable='vehicle_controller',
             name='vehicle_controller',
-            output='screen' 
+            output='screen',
+            parameters = [
+                {'L_wheelbase_m': 0.33}  # dist between axles in meters
+            ] 
         ),
 
         Node(
