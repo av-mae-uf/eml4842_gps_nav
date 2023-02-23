@@ -521,6 +521,6 @@ def get_cross_track_and_heading_error(closest_pt, heading_closest_rad, \
     else:
         error_cross_track = -np.linalg.norm(pvec)
     
-    return([error_cross_track, error_heading_rad, line_pt])
+    return error_cross_track, error_heading_rad, line_pt
 
 #########################################################################  
