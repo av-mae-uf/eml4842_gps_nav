@@ -474,4 +474,53 @@ def get_rad_of_curvature_to_carrot(vehicle_point, vehicle_heading_rad, look_ahea
   
   return [radius_of_curvature, driveme]
 
+######################################################################### 
+def get_cross_track_and_heading_error(closest_pt, heading_closest_rad, \
+                                      vehicle_pt, heading_vehicle_rad):
+    # planar case ; both poses are in the xy plane
+    #
+    # inputs:  closest_pt and vehicle_pt are type np.array with
+    #          length 3 (z=0) ; length units are meters ; heading angles
+    #          are in radians
+    # outputs: 1) perpendicular distance from vehicle position to line
+    #             defined by the closest_pose position and orientation ;
+    #             a positive value indicates that the vehicle is to the
+    #             right of the line defined by the closest_pose as viewed
+    #             from the top
+    #          2) angle in radians between heading of vehicle and
+    #             heading at closest_pose ; positive angle indicates
+    #             that the vehicle needs to turn left to align with
+    #             the heading at the closest_pose
+    #          3) the coordinates of the point on the infinite line (that
+    #             is defined by the closest_pt and heading_closest) that
+    #             is closest to the vehicle_pt
+    
+    # get heading error in radians
+    
+    error_heading_rad = heading_closest_rad - heading_vehicle_rad
+    
+    # get coordinates of the plane defined by closest_pose point and heading
+    
+    perp_dir = heading_closest_rad + math.pi/2.0
+    S_plane = np.array([math.cos(perp_dir), math.sin(perp_dir), 0.0])
+    Do = -np.dot(closest_pt, S_plane)
+    
+    # now find distance of vehicle_pt from this plane
+    
+    num = -S_plane*(Do + np.dot(vehicle_pt, S_plane))
+    den = np.dot(S_plane,S_plane)
+    pvec = num/den  # vector from vehicle point to the closest point on the plane
+    line_pt = veh_pt + pvec
+    
+    zvec = np.array([0.0, 0.0, 1.0])
+    S_clo = np.array([math.cos(heading_closest_rad), math.sin(heading_closest_rad), 0.0])
+    dir_check = np.dot(np.cross(pvec, S_clo), zvec) 
+    
+    if dir_check <= 0.0:
+        error_cross_track = np.linalg.norm(pvec)
+    else:
+        error_cross_track = -np.linalg.norm(pvec)
+    
+    return([error_cross_track, error_heading_rad, line_pt])
+
 #########################################################################  
