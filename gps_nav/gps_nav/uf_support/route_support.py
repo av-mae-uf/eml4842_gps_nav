@@ -2,6 +2,8 @@ import math
 import numpy as np
 from enum import Enum
 
+from gps_nav.uf_support.geometry_support import get_intersection_of_two_lines
+
 D2R = np.pi/180.0
 R2D = 180.0/np.pi
 
@@ -523,4 +525,39 @@ def get_cross_track_and_heading_error(closest_pt, heading_closest_rad, \
     
     return error_cross_track, error_heading_rad, line_pt
 
+#########################################################################  
+def determine_arc_radius(vehicle_point, vehicle_heading_rad, goal_point):
+  # Get the radius of the circular arc that is tangent to the
+  # current pose and which passes through the goal point.
+  # A positive radius indicates a left-hand turn.
+  # 'vehicle_point' and 'goal_point' are length 3 numpy arrays
+
+  vec1 = goal_point - vehicle_point
+  mid_point = vehicle_point + 0.5*vec1
+
+  S1 = np.array([math.cos(vehicle_heading_rad+math.pi/2.0), math.sin(vehicle_heading_rad+math.pi/2.0), 0.0])
+  SOL1 = np.cross(vehicle_point, S1)
+
+  vec1_heading_rad = math.atan2(vec1[1], vec1[0])
+  S2 = np.array([math.cos(vec1_heading_rad+math.pi/2.0), math.sin(vec1_heading_rad+math.pi/2.0), 0.0])
+  SOL2 = np.cross(mid_point, S2)
+
+  axis_pt = get_intersection_of_two_lines(S1, SOL1, S2, SOL2)
+
+  #axis_pt is returned in homogenous coordinates
+  if axis_pt[3] == 0:
+    return 1.e+5
+
+  radius_dist = np.linalg.norm(axis_pt[0:3] - vehicle_point)
+
+  v1 = vehicle_point - axis_pt[0:3]
+  v2 = goal_point - axis_pt[0:3]
+  zvec = np.array([0.0, 0.0, 1.0])
+  test = np.dot(zvec, np.cross(v1, v2))
+
+  if(test >= 0.0):
+    return radius_dist
+  else:
+    return -radius_dist
+  
 #########################################################################  
