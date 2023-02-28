@@ -84,7 +84,10 @@ class VehicleSimulator(Node):
 
         if self.input_type == 2:
             # get radius of curvature and speed from VehCmd message info
-            self.rad_of_curvature = self.L_wheelbase_m / math.tan(self.steering_angle_rad)
+            if np.isclose(self.steering_angle_rad, 0.0, atol=1.0e-5):
+                self.rad_of_curvature = 1.0e+5
+            else:
+                self.rad_of_curvature = self.L_wheelbase_m / math.tan(self.steering_angle_rad)
             self.speed = self.throttle_effort * 4.0 / 100.0  # max speed is 4 m/sec
 
         new_position, new_heading_rad = update_vehicle_pose(
