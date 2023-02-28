@@ -512,7 +512,7 @@ def get_cross_track_and_heading_error(closest_pt, heading_closest_rad, \
     num = -S_plane*(Do + np.dot(vehicle_pt, S_plane))
     den = np.dot(S_plane,S_plane)
     pvec = num/den  # vector from vehicle point to the closest point on the plane
-    line_pt = veh_pt + pvec
+    line_pt = vehicle_pt + pvec
     
     zvec = np.array([0.0, 0.0, 1.0])
     S_clo = np.array([math.cos(heading_closest_rad), math.sin(heading_closest_rad), 0.0])
