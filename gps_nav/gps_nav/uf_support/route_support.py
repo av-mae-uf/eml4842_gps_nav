@@ -500,6 +500,11 @@ def get_cross_track_and_heading_error(closest_pt, heading_closest_rad, \
     # get heading error in radians
     
     error_heading_rad = heading_closest_rad - heading_vehicle_rad
+    # bound the heading error between +- pi
+    while error_heading_rad > math.pi:
+      error_heading_rad -= 2.0*math.pi
+    while error_heading_rad < -math.pi:
+      error_heading_rad += 2.0*math.pi
     
     # get coordinates of the plane defined by closest_pose point and heading
     
