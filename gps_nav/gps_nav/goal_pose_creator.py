@@ -54,6 +54,7 @@ class GoalPoseCreator(Node):
         self.have_vehicle_pose = False
 
         self.want_loop = False
+        self.deltaU = .001  # this will precalculate 1001 points on each segment
 
     def send_request(self):  # no data is sent in the request
         self.future = self.cli.call_async(self.req)
@@ -164,7 +165,7 @@ def main(args=None):
 
                 # create the route_segments array
                 goal_pose_creator.want_loop = response.want_loop
-                goal_pose_creator.route_segments = uf_nav.create_route_segments(route_poses, goal_pose_creator.want_loop)
+                goal_pose_creator.route_segments = uf_nav.create_route_segments(route_poses, goal_pose_creator.want_loop, goal_pose_creator.deltaU)
 
                 goal_pose_creator.get_logger().info('Goal Pose creator made %d route segments.' %
                                                  len(goal_pose_creator.route_segments))

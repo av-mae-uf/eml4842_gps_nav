@@ -32,7 +32,7 @@ class route_pose_class:
     self.w2_for_subsequent_segment = w2_for_subsequent_segment
 
 class route_segment_class:
-  def __init__(self, p0, p1, p2, p3, w1, w2, length, state):
+  def __init__(self, p0, p1, p2, p3, w1, w2, length, state, delta_u):
     self.p0 = p0
     self.p1 = p1
     self.p2 = p2
@@ -41,9 +41,34 @@ class route_segment_class:
     self.w2 = w2
     self.length = length
     self.state = state
+    
+    # delta_u must be less than 1.0 ; for example, if delta_u is .001,
+    #    there will be 1001 points calculated in the np array 'pts'
+    # if delta_u is negative, no intermediate points will be calculated
 
+    # will be an numpy array (n+1 by 2) of x,y coords of points on path ; u will vary by 1/n
+    self.pts = self.calculate_route_segment_points(delta_u)
+
+  def calculate_route_segment_points(self, delta_u):
+    if delta_u < 0.0:
+      return np.array([0.0,0.0])
+    
+    numpts = int(1.0/delta_u) + 1
+    pts = np.zeros((numpts,2))
+
+    uval = 0.0
+    for i in np.arange(numpts):
+      if uval > 1.0:
+        uval = 1.0
+      nowpt = get_point_on_route(self, uval)
+      pts[i][0] = nowpt[0]
+      pts[i][1] = nowpt[1]
+      uval += delta_u
+      
+    return pts
+  
 #########################################################################
-def create_route_segments(route_poses, want_loop):
+def create_route_segments(route_poses, want_loop, deltaU):
   # inputs - route_poses: an array of 'route_pose_class'
   #
   # outputs- route_segments:  an array of 'route_segment_class'
@@ -82,7 +107,7 @@ def create_route_segments(route_poses, want_loop):
       length += np.linalg.norm(current_pt - last_point)
       last_point = current_pt
     
-    route_segments.append(route_segment_class(p0, p1, p2, p3, w1, w2, length, route_poses[i].state))
+    route_segments.append(route_segment_class(p0, p1, p2, p3, w1, w2, length, route_poses[i].state, deltaU))
  
   if(want_loop):
     # add a route segment from the last route point to the initial route point
@@ -109,7 +134,7 @@ def create_route_segments(route_poses, want_loop):
       length += np.linalg.norm(current_pt - last_point)
       last_point = current_pt
     
-    route_segments.append(route_segment_class(p0, p1, p2, p3, w1, w2, length, route_poses[num_points-1].state))
+    route_segments.append(route_segment_class(p0, p1, p2, p3, w1, w2, length, route_poses[num_points-1].state, deltaU))
     
   else:  # no loop; add a stop segment (make sure the distance (20 here) is larger than the look-ahead-distance
     p0 = p3
@@ -122,7 +147,7 @@ def create_route_segments(route_poses, want_loop):
     #state = uf_dict["END_PLUS_ONE"]
     state = myState.END_PLUS_ONE.value
 
-    route_segments.append(route_segment_class(p0, p1, p2, p3, w1, w2, length, state))
+    route_segments.append(route_segment_class(p0, p1, p2, p3, w1, w2, length, state, deltaU))
   
   return route_segments
 
@@ -470,7 +495,8 @@ def get_rad_of_curvature_to_carrot(vehicle_point, vehicle_heading_rad, look_ahea
 
   # p0, p1, p2, p3, w1, w2, length, state
   
-  driveme = route_segment_class(p0, p1, p2, p3, 1.0, 1.0, 8.0, 0)
+  deltaU = -1 # don't want to calculate intermediate points on this segment
+  driveme = route_segment_class(p0, p1, p2, p3, 1.0, 1.0, 8.0, 0, deltaU)
 
   radius_of_curvature = get_radius_at_u_equals_0(driveme)
   
