@@ -27,7 +27,10 @@ def generate_launch_description():
             package='gps_nav',
             executable='goal_pose_creator',
             name='goal_pose_creator',
-            output='screen'
+            output='screen',
+            parameters = [
+                {'distBetweenPoints': 0.05} # dist between points on path segments in meters
+            ]
         ),
         Node(
             package='gps_nav',

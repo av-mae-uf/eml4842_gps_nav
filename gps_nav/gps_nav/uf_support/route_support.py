@@ -32,43 +32,138 @@ class route_pose_class:
     self.w2_for_subsequent_segment = w2_for_subsequent_segment
 
 class route_segment_class:
-  def __init__(self, p0, p1, p2, p3, w1, w2, length, state, delta_u):
+  def __init__(self, p0, p1, p2, p3, w1, w2, state, dist_between_pts):
     self.p0 = p0
     self.p1 = p1
     self.p2 = p2
     self.p3 = p3
     self.w1 = w1
     self.w2 = w2
-    self.length = length
     self.state = state
-    
-    # delta_u must be less than 1.0 ; for example, if delta_u is .001,
-    #    there will be 1001 points calculated in the np array 'pts'
-    # if delta_u is negative, no intermediate points will be calculated
 
-    # will be an numpy array (n+1 by 2) of x,y coords of points on path ; u will vary by 1/n
-    self.pts = self.calculate_route_segment_points(delta_u)
+    if dist_between_pts > 0.0:
+      self.length = self.get_length()  # meters
+      self.dist_between_pts = dist_between_pts  # meters
+      self.calculate_route_segment_points(dist_between_pts)
+      # the last function calculates an np array named 'pt_info' of size n x 4 of
+      #    evenly spaced points along the path [uval, x, y, dist_from_p0]
 
-  def calculate_route_segment_points(self, delta_u):
-    if delta_u < 0.0:
-      return np.array([0.0,0.0])
+  def get_length(self):
+    length = 0.0
+    last_point = np.copy(self.p0)
     
-    numpts = int(1.0/delta_u) + 1
-    pts = np.zeros((numpts,2))
+    for u in np.arange(0.0, 1.001, 0.001):
+      denom = (1.0 - u) * (1.0 - u) * (1.0 - u) + 3.0 * u * (1.0 - u) * (1.0 - u) * self.w1 + 3.0 * u * u * (1.0 - u) * self.w2 + u * u * u;
+      current_pt = ((1.0 - u) * (1.0 - u) * (1.0 - u) * self.p0 + 3.0 * u * (1.0 - u) * (1.0 - u) * self.w1 * self.p1 \
+                  + 3.0 * u * u * (1.0 - u) * self.w2 * self.p2 + u * u * u * self.p3) / denom;
+      length += np.linalg.norm(current_pt - last_point)
+      last_point = current_pt
+
+    return length
+  
+  def get_point(self, u):
+    denom = (1.0 - u) * (1.0 - u) * (1.0 - u) + 3.0 * u * (1.0 - u) * (1.0 - u) * self.w1 + 3.0 * u * u * (1.0 - u) * self.w2 + u * u * u;
+    pt = ((1.0 - u) * (1.0 - u) * (1.0 - u) * self.p0 + 3.0 * u * (1.0 - u) * (1.0 - u) * self.w1 * self.p1 + 3.0 * u * u * (1.0 - u) * self.w2 * self.p2 + u * u * u * self.p3) / denom
+    return pt  
+  
+  def get_heading_rad(self,u):
+    P0 = self.p0
+    P1 = self.p1
+    P2 = self.p2
+    P3 = self.p3
+    w1 = self.w1
+    w2 = self.w2
+
+    pyNumer = (-9 * P1 * w1 * w2 + 9 * P2 * w1 * w2 - 3 * w1 * P0 + 6 * P0 * w2 + 9 * w1 * P1 - 9 * P2 * w2 - 6 * P3 * w1 + 3 * P3 * w2 - 3 * P0 + 3 * P3) * u ** 4 \
+          + (18 * P1 * w1 * w2 - 18 * P2 * w1 * w2 + 12 * w1 * P0 - 18 * P0 * w2 - 18 * w1 * P1 + 18 * P2 * w2 + 6 * P3 * w1 + 6 * P0 - 6 * P3) * u ** 3 \
+          + (-9 * P1 * w1 * w2 + 9 * P2 * w1 * w2 - 18 * w1 * P0 + 18 * P0 * w2 + 18 * w1 * P1 - 18 * P2 * w2 - 3 * P0 + 3 * P3) * u ** 2 \
+          + (12 * w1 * P0 - 6 * P0 * w2 - 12 * w1 * P1 + 6 * P2 * w2) * u \
+          - 3 * w1 * P0 + 3 * w1 * P1
+
+
+    pyDenom = 1 + (3 * w1 - 3 * w2) ** 2 * u ** 6 + 2 * (-6 * w1 + 3 * w2 + 3) * (3 * w1 - 3 * w2) * u ** 5 \
+          + (2 * (3 * w1 - 3) * (3 * w1 - 3 * w2) + (-6 * w1 + 3 * w2 + 3) ** 2) * u ** 4 \
+          + (6 * w1 - 6 * w2 + 2 * (3 * w1 - 3) * (-6 * w1 + 3 * w2 + 3)) * u ** 3 \
+          + (-12 * w1 + 6 * w2 + 6 + (3 * w1 - 3) ** 2) * u ** 2 \
+          + (6 * w1 - 6) * u
+
+    dxdu = pyNumer[0]/pyDenom
+    dydu = pyNumer[1]/pyDenom
+
+    return (math.atan2(dydu, dxdu))
+  
+  def get_u(self, dist):
+    uval = 0.0
+    mydist = 0.000000001  # did this in case input 'dist' is zero and then will output 'uval' equals zero
+    last_pt = np.copy(self.p0)
+
+    while(mydist < dist and uval <= 1.0):
+      uval += 0.001
+      pt = np.copy(self.get_point(uval))
+      mydist += np.linalg.norm(pt-last_pt)
+      last_pt = np.copy(pt)
+      
+    return uval
+
+  def calculate_route_segment_points(self, dist_between_pts):
+    if dist_between_pts < 0.0:
+      return np.array([0.0,0.0,0.0,0.0])  # return junk
+    
+    route_data = np.zeros((5001, 5), dtype = float)  #  u, x, y, dist
 
     uval = 0.0
+    dist_so_far = 0.0
+    prev_pt = np.copy(self.p0)
+    for i in np.arange(5001):
+      pt = self.get_point(uval)
+      route_data[i, 0] = uval
+      route_data[i, 1] = pt[0]
+      route_data[i, 2] = pt[1]
+      route_data[i, 3] = 0.0  # very slow ; will calculate only for evenly spaced points
+      dist_so_far += np.linalg.norm(pt-prev_pt)
+      route_data[i, 4] = dist_so_far
+      prev_pt = np.copy(pt)
+      uval += 0.0002
+
+    numpts = int(self.length/dist_between_pts) + 1
+    self.pt_info = np.zeros((numpts,5))
+     
+    find_dist = 0.0
+    dist_so_far = 0.0
+    search_index = 0
+
     for i in np.arange(numpts):
-      if uval > 1.0:
-        uval = 1.0
-      nowpt = get_point_on_route(self, uval)
-      pts[i][0] = nowpt[0]
-      pts[i][1] = nowpt[1]
-      uval += delta_u
-      
-    return pts
-  
+
+      if find_dist >= self.length:
+        now_u = 1.0
+        self.pt_info[i,0] = route_data[5000, 0]
+        self.pt_info[i,1] = route_data[5000, 1]
+        self.pt_info[i,2] = route_data[5000, 2]
+        self.pt_info[i,3] = route_data[5000, 3]
+        self.pt_info[i,4] = route_data[5000, 4]
+      elif np.isclose(find_dist, 0.0, atol=0.001):
+        now_u = 0.0
+        self.pt_info[i,0] = route_data[0, 0]
+        self.pt_info[i,1] = route_data[0, 1]
+        self.pt_info[i,2] = route_data[0, 2]
+        self.pt_info[i,3] = route_data[0, 3]
+        self.pt_info[i,4] = route_data[0, 4]
+      else:
+        while (dist_so_far < find_dist and search_index<5000):
+          search_index += 1
+          dist_so_far = route_data[search_index,4]
+        self.pt_info[i,0] = route_data[search_index, 0]
+        self.pt_info[i,1] = route_data[search_index, 1]
+        self.pt_info[i,2] = route_data[search_index, 2]
+        self.pt_info[i,3] = route_data[search_index, 3]
+        self.pt_info[i,4] = route_data[search_index, 4]
+
+      find_dist += dist_between_pts
+        
+###
+# End of definition of route_pose_class
 #########################################################################
-def create_route_segments(route_poses, want_loop, deltaU):
+def create_route_segments(route_poses, want_loop, dist_between_pts):
   # inputs - route_poses: an array of 'route_pose_class'
   #
   # outputs- route_segments:  an array of 'route_segment_class'
@@ -107,7 +202,8 @@ def create_route_segments(route_poses, want_loop, deltaU):
       length += np.linalg.norm(current_pt - last_point)
       last_point = current_pt
     
-    route_segments.append(route_segment_class(p0, p1, p2, p3, w1, w2, length, route_poses[i].state, deltaU))
+    route_segments.append(route_segment_class(p0, p1, p2, p3, w1, w2, route_poses[i].state, dist_between_pts))
+    route_segments[-1].length = length
  
   if(want_loop):
     # add a route segment from the last route point to the initial route point
@@ -123,32 +219,22 @@ def create_route_segments(route_poses, want_loop, deltaU):
     p1 = p0 + L1L2dist * S1
     p2 = p3 - L1L2dist * S2
     
-    # now get the length of the segment
-    length = 0.0
-    last_point = p0
-    
-    for u in np.arange(0.0, 1.001, 0.001):
-      denom = (1.0 - u) * (1.0 - u) * (1.0 - u) + 3.0 * u * (1.0 - u) * (1.0 - u) * w1 + 3.0 * u * u * (1.0 - u) * w2 + u * u * u;
-      current_pt = ((1.0 - u) * (1.0 - u) * (1.0 - u) * p0 + 3.0 * u * (1.0 - u) * (1.0 - u) * w1 * p1 \
-                  + 3.0 * u * u * (1.0 - u) * w2 * p2 + u * u * u * p3) / denom;
-      length += np.linalg.norm(current_pt - last_point)
-      last_point = current_pt
-    
-    route_segments.append(route_segment_class(p0, p1, p2, p3, w1, w2, length, route_poses[num_points-1].state, deltaU))
+    route_segments.append(route_segment_class(p0, p1, p2, p3, w1, w2, route_poses[num_points-1].state, dist_between_pts))
     
   else:  # no loop; add a stop segment (make sure the distance (20 here) is larger than the look-ahead-distance
+    S2 = np.array([math.cos(route_poses[-1].heading_rad), math.sin(route_poses[-1].heading_rad), 0.0])
     p0 = p3
     p1 = p0 + 5.0 * S2
     p2 = p0 + 15.0 * S2
     p3 = p0 + 20.0 * S2
     w1 = 1.0
     w2 = 1.0
-    length = 20.0
+    #length = 20.0
     #state = uf_dict["END_PLUS_ONE"]
     state = myState.END_PLUS_ONE.value
 
-    route_segments.append(route_segment_class(p0, p1, p2, p3, w1, w2, length, state, deltaU))
-  
+    route_segments.append(route_segment_class(p0, p1, p2, p3, w1, w2, state, dist_between_pts))
+
   return route_segments
 
 #########################################################################
@@ -246,7 +332,6 @@ def get_heading_rad_at_u(route_segment:route_segment_class, u:float):
 #########################################################################
 def get_look_ahead_point(look_ahead_dist:float, \
                          vehicle_pt:np.array,   \
-                         #route_segments:list[route_segment_class], \
                          route_segments, \
                          current_seg_num:int \
                         ) :
@@ -275,8 +360,6 @@ def get_look_ahead_point(look_ahead_dist:float, \
   #     
 
   num_segments = len(route_segments)
-
-  #print('uf_nav_support; current seg = ', current_seg_num, ' num_segments = ', num_segments)
 
   if(current_seg_num > num_segments):
     print('The current segment number is ', current_seg_num,', but there are only ', num_segments, ' route segments.')
@@ -314,10 +397,7 @@ def get_look_ahead_point(look_ahead_dist:float, \
     # now get the look_ahead pose
     used_up_length = get_route_length_to_u(route_segments[veh_seg_num],my_uval)
     length_remaining_on_closest_seg = route_segments[veh_seg_num].length - used_up_length
-    #print('vehicle seg num = ', veh_seg_num, ' uval' , my_uval)
-    #print('used up length = ', used_up_length)
-    #print('length remaining = ', length_remaining_on_closest_seg)
-
+    
     if (length_remaining_on_closest_seg > look_ahead_dist):
       look_ahead_seg_num = veh_seg_num
       look_ahead_uval = get_u_value_for_dist(route_segments[veh_seg_num], used_up_length + look_ahead_dist)
@@ -347,6 +427,120 @@ def get_look_ahead_point(look_ahead_dist:float, \
                                     route_segments[veh_seg_num].w1, \
                                     route_segments[veh_seg_num].w2)
   
+  if (route_segments[veh_seg_num].state == myState.END_PLUS_ONE):
+    stop_flag = 1  # STOP
+  else:
+    stop_flag = 0
+
+  return [look_ahead_pose, closest_pose, veh_seg_num, look_ahead_seg_num, stop_flag]
+
+#########################################################################
+def get_look_ahead_point_v2(look_ahead_dist:float, \
+                         vehicle_pt:np.array,   \
+                         route_segments, \
+                         current_seg_num:int \
+                        ) :
+                        #)->list[
+                        #        route_pose_class, \
+                        #        route_pose_class, \
+                        #        int, \
+                        #        int, \
+                        #        int]:
+  #
+  # Find the closest point on the current vehicle path segment and the next path segment.
+  # If the point on the next segment is closest, update the vehicle 'current' segment.
+  #
+  # inputs -
+  #     look_ahead_dist: the distance from the closest point on the route to the look ahead point
+  #     vehicle_pt: x,y,z coordinates of the vehicle at this instant
+  #     route_segments: a list of route_segment_struct
+  #     current_segment_num: the current route segment number to look for closest point
+  #
+  # outputs -
+  #     look_ahead_pose:route_pose_class, 
+  #     closest_pose: route_pose_class,
+  #     veh_seg_num:int, 
+  #     look_ahead_seg_num:int, 
+  #     stop_flag:int       Equals 1 if veh_seg_num has a state of END_PLUS_ONE
+  #     
+  num_segments = len(route_segments)
+
+  if(current_seg_num > num_segments):
+    print('The current segment number is ', current_seg_num,', but there are only ', num_segments, ' route segments.')
+    return [0, 0, 0, 0, 0]
+  
+  closest_dist_current_seg = 99999.0
+  closest_dist_next_seg    = 99999.0
+  best_current_seg_index = 0
+  best_next_seg_index = 0
+
+  if (current_seg_num < num_segments):
+    for current_seg_index in np.arange(len(route_segments[current_seg_num].pt_info)):
+      pt_now = np.array([route_segments[current_seg_num].pt_info[current_seg_index, 1], route_segments[current_seg_num].pt_info[current_seg_index, 2], 0.0])
+      dist_now = np.linalg.norm(pt_now - vehicle_pt)
+
+      if dist_now < closest_dist_current_seg:
+        closest_dist_current_seg = dist_now
+        best_current_seg_index = current_seg_index
+
+    for current_seg_index in np.arange(len(route_segments[(current_seg_num+1)%num_segments].pt_info)):
+      pt_now = np.array([route_segments[(current_seg_num+1)%num_segments].pt_info[current_seg_index, 1], route_segments[(current_seg_num+1)%num_segments].pt_info[current_seg_index, 2], 0.0])
+      dist_now = np.linalg.norm(pt_now - vehicle_pt)
+
+      if dist_now < closest_dist_next_seg:
+        closest_dist_next_seg = dist_now
+        best_next_seg_index = current_seg_index
+
+    if closest_dist_current_seg < closest_dist_next_seg:
+      veh_seg_num = current_seg_num
+      my_pt_info_index = best_current_seg_index
+    else:
+      veh_seg_num = (current_seg_num+1)%num_segments
+      my_pt_info_index = best_next_seg_index
+    
+    my_closest_pt = np.array([route_segments[veh_seg_num].pt_info[my_pt_info_index,1], \
+                              route_segments[veh_seg_num].pt_info[my_pt_info_index,2], 0.0])
+    closest_heading_rad = route_segments[veh_seg_num].pt_info[my_pt_info_index,3]
+
+    closest_pose = route_pose_class(my_closest_pt, \
+                                    closest_heading_rad, \
+                                    route_segments[veh_seg_num].state, \
+                                    route_segments[veh_seg_num].w1, \
+                                    route_segments[veh_seg_num].w2)
+    # now get the look ahead pose
+    # is look ahead on the same segment?
+    seg_length_at_closest = route_segments[veh_seg_num].pt_info[my_pt_info_index, 4]
+    if route_segments[veh_seg_num].length - seg_length_at_closest > look_ahead_dist:
+      # the look ahead is on our segment
+      look_ahead_seg_num = veh_seg_num
+      index = my_pt_info_index
+      while index < len(route_segments[veh_seg_num].pt_info) and \
+            route_segments[veh_seg_num].pt_info[index, 4] - seg_length_at_closest < look_ahead_dist:
+        index += 1
+      look_ahead_pt = np.array([route_segments[veh_seg_num].pt_info[index-1,1], \
+                              route_segments[veh_seg_num].pt_info[index-1,2], 0.0])
+      look_ahead_heading_rad = route_segments[veh_seg_num].pt_info[index-1,3]
+    
+    else:
+      look_ahead_seg_num = (veh_seg_num+1)%num_segments
+      dist_remaining = look_ahead_dist - (route_segments[veh_seg_num].length - seg_length_at_closest)
+
+      index = 0
+      while(dist_remaining > route_segments[look_ahead_seg_num].pt_info[index,4] and \
+            index < len(route_segments[look_ahead_seg_num].pt_info)):
+        index += 1
+      
+      look_ahead_pt = np.array([route_segments[look_ahead_seg_num].pt_info[index-1,1], \
+                              route_segments[look_ahead_seg_num].pt_info[index-1,2], 0.0])
+      look_ahead_heading_rad = route_segments[look_ahead_seg_num].pt_info[index-1,3]
+
+    look_ahead_pose = route_pose_class(look_ahead_pt, \
+                                     look_ahead_heading_rad, \
+                                     route_segments[look_ahead_seg_num].state, \
+                                     route_segments[look_ahead_seg_num].w1, \
+                                     route_segments[look_ahead_seg_num].w2)
+
+
   if (route_segments[veh_seg_num].state == myState.END_PLUS_ONE):
     stop_flag = 1  # STOP
   else:
@@ -444,7 +638,7 @@ def get_radius_at_u_equals_0(route_segment:route_segment_class):
 def update_vehicle_pose(old_position, old_heading_rad, rad_of_curvature, speed):
 # outputs - new_position, np.array of floats
 #           new_heading_rad, rad_of_curvature, speed, float
-  #print(old_position, old_heading_rad, rad_of_curvature, speed)
+  
   if (abs(rad_of_curvature) >= 150.0):
     Svec = np.array([math.cos(old_heading_rad), math.sin(old_heading_rad), 0.0])
     new_position = old_position + speed * Svec
@@ -495,8 +689,8 @@ def get_rad_of_curvature_to_carrot(vehicle_point, vehicle_heading_rad, look_ahea
 
   # p0, p1, p2, p3, w1, w2, length, state
   
-  deltaU = -1 # don't want to calculate intermediate points on this segment
-  driveme = route_segment_class(p0, p1, p2, p3, 1.0, 1.0, 8.0, 0, deltaU)
+  dist_between_pts = -1 # don't want to calculate intermediate points on this segment
+  driveme = route_segment_class(p0, p1, p2, p3, 1.0, 1.0, 0, dist_between_pts)
 
   radius_of_curvature = get_radius_at_u_equals_0(driveme)
   

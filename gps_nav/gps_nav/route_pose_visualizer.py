@@ -114,8 +114,8 @@ def main(args=None):
                     route_poses.append(route_supp.route_pose_class(np.array([ptx, pty, ptz]), heading_rad, state))
 
                 # create the route_segments list
-                deltaU = 0.01 # this will give 101 points on each segment
-                node.route = route_supp.create_route_segments(route_poses, response.want_loop, deltaU)
+                
+                node.route = route_supp.create_route_segments(route_poses, response.want_loop, -1.0) # The -1.0 will prevent the extra calcs for pts
 
                 node.send_transform(response.mypose[0])
 

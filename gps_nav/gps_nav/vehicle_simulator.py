@@ -13,7 +13,6 @@ from gps_nav.uf_support.route_support import update_vehicle_pose
 D2R = math.pi / 180.0
 R2D = 1.0 / D2R
 
-
 class VehicleSimulator(Node):
     def __init__(self):
         super().__init__("vehicle_simulator")

@@ -18,6 +18,9 @@ class GoalPoseCreator(Node):
         super().__init__('carrot_creator')
         self.cli = self.create_client(GetRoutePoses, 'get_route_poses')
 
+        self.declare_parameter("distBetweenPoints", 0.05)
+        self.dist_between_pts = self.get_parameter("distBetweenPoints").value
+
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
         self.req = GetRoutePoses.Request()
@@ -54,7 +57,6 @@ class GoalPoseCreator(Node):
         self.have_vehicle_pose = False
 
         self.want_loop = False
-        self.deltaU = .001  # this will precalculate 1001 points on each segment
 
     def send_request(self):  # no data is sent in the request
         self.future = self.cli.call_async(self.req)
@@ -74,7 +76,7 @@ class GoalPoseCreator(Node):
 
         vehicle_pt = np.array([self.g_xUTM, self.g_yUTM, 0.0])
 
-        ans = uf_nav.get_look_ahead_point(
+        ans = uf_nav.get_look_ahead_point_v2(
             self.look_ahead_dist, vehicle_pt, self.route_segments, self.current_seg_num)
 
         self.look_ahead_pose = ans[0]
@@ -143,8 +145,7 @@ def main(args=None):
                 num_poses = response.num_route_poses
                 last_pose = response.mypose[num_poses-1]
                 goal_pose_creator.get_logger().info(
-                    f"Goal Pose Creator received {num_poses} poses. " + \
-                    f"Last pt = {last_pose.position.x}, {last_pose.position.y}, {last_pose.position.z}")
+                    f"Goal Pose Creator received {num_poses} poses. ")
 
                 # create the route_poses array
                 for i in range(num_poses):
@@ -161,19 +162,29 @@ def main(args=None):
                     myw2 = 1.0
                     route_poses.append(uf_nav.route_pose_class(
                         np.array([ptx, pty, ptz]), myheadingrad, mystate, myw1, myw2))
-                    # print(route_poses[i].pt[0], route_poses[i].pt[1], route_poses[i].pt[2], route_poses[i].heading_rad*180.0/math.pi, route_poses[i].state, route_poses[i].w1_for_subsequent_segment, route_poses[i].w2_for_subsequent_segment)
-
+                    
                 # create the route_segments array
                 goal_pose_creator.want_loop = response.want_loop
-                goal_pose_creator.route_segments = uf_nav.create_route_segments(route_poses, goal_pose_creator.want_loop, goal_pose_creator.deltaU)
+                goal_pose_creator.route_segments = uf_nav.create_route_segments(route_poses, goal_pose_creator.want_loop, goal_pose_creator.dist_between_pts)
 
                 goal_pose_creator.get_logger().info('Goal Pose creator made %d route segments.' %
                                                  len(goal_pose_creator.route_segments))
 
                 goal_pose_creator.num_route_segments = num_poses
 
+                # now add the heading values at each u value for each segment
+                for seg in goal_pose_creator.route_segments:
+                    for i in np.arange(len(seg.pt_info)):
+                        seg.pt_info[i,3] = seg.get_heading_rad(seg.pt_info[i,0])
+                    
                 goal_pose_creator.ready_to_process = True
                 goal_pose_creator.get_logger().info('Ready to proceed.')
+
+                #outfile = open('equally_spaced.csv', 'w')
+                #for seg in goal_pose_creator.route_segments:
+                #    for j in np.arange(len(seg.pt_info)):
+                #        print(f'{seg.pt_info[j,0]}, {seg.pt_info[j,1]}, {seg.pt_info[j,2]}, {seg.pt_info[j,3]}, {seg.pt_info[j,4]}', file = outfile)
+                #outfile.close()
 
             break
 
