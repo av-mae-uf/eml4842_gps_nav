@@ -17,7 +17,7 @@ setup(
         ('share/' + package_name + '/data', ['data/pose_list.txt']),  # change for opening the data file
         ('share/' + package_name + '/data/stockpile', glob('data/stockpile/*.txt')),
         ('share/' + package_name + '/rviz', glob('rviz/*.rviz')),  # copy rviz config files
-        ('share/' + package_name + '/scripts', glob('*.py')),  # copy scripts
+        ('share/' + package_name + '/scripts', glob('scripts/*.py')),  # copy scripts
     ],
     install_requires=['setuptools'],
     zip_safe=True,
