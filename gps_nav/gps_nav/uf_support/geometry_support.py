@@ -67,7 +67,7 @@ def do_line_segments_intersect(line1_ptA, line1_ptB, line2_ptA, line2_ptB):
   
   else:
     # see if the intersection point lies on both segments
-    my_int_pt = int_pt[1:4]
+    my_int_pt = int_pt[0:3]
     v1 = my_int_pt - line1_ptA
     v2 = my_int_pt - line1_ptB
     
