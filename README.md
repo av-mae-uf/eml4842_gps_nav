@@ -22,6 +22,10 @@ Download the repository using
 ```bash
 git clone https://github.com/av-mae-uf/eml4930_gps_nav.git
 ```
+The gps_nav package uses the ackermann_msgs package.  Add the following:
+```bash
+sudo apt install ros-humble-ackermann-msgs
+```
 Change your directory to your root workspace directory (*~/<your_dev_ws>*) and build the workspace.
 ```bash
 colcon build
