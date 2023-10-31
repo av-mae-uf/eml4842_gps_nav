@@ -161,7 +161,7 @@ class route_segment_class:
       find_dist += dist_between_pts
         
 ###
-# End of definition of route_pose_class
+# End of definition of route_segment_class
 #########################################################################
 def create_route_segments(route_poses, want_loop, dist_between_pts):
   # inputs - route_poses: an array of 'route_pose_class'
