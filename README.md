@@ -20,7 +20,7 @@ cd <your_dev_ws>/src
 
 Download the repository using
 ```bash
-git clone https://github.com/av-mae-uf/eml4930_gps_nav.git
+git clone https://github.com/av-mae-uf/eml4842_gps_nav.git
 ```
 The gps_nav package uses the ackermann_msgs package.  Add the following:
 ```bash
