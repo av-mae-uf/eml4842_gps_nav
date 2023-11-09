@@ -89,20 +89,14 @@ class VehicleController(Node):
 
     def main_timer_callback(self):
 
-        if self.pause == False:
-            self.last_pause_value = False
-
         if self.pause == True:
-            if self.last_pause_value == False:
-                self.last_pause_value = True
+            # send out a zero velocity Ackermann message
+            out_msg = AckermannDriveStamped()
+            out_msg.drive.speed = 0.0
+            out_msg.drive.steering_angle = 0.0
 
-                # send out a zero velocity twist
-                out_msg = AckermannDriveStamped()
-                out_msg.drive.speed = 0.0
-                out_msg.drive.steering_angle = 0.0
-
-                self.publisher.publish(out_msg)
-                return
+            self.publisher.publish(out_msg)
+            return
 
         # This will only publish after each subscription has occured at least once
         if self.have_goal_pose and self.have_vehicle_pose:
@@ -115,8 +109,6 @@ class VehicleController(Node):
                 self.current_goal_heading_rad,
                 p1_ratio,
             )
-
-            zval = 1.9425 / radius_of_curvature - 0.271  # y = 1.9425 * x - 0.271
 
             self.L_wheelbase_m = self.get_parameter("L_wheelbase_m").value
 
