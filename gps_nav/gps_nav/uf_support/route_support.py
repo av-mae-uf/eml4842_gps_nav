@@ -526,8 +526,8 @@ def get_look_ahead_point_v2(look_ahead_dist:float, \
       dist_remaining = look_ahead_dist - (route_segments[veh_seg_num].length - seg_length_at_closest)
 
       index = 0
-      while(dist_remaining > route_segments[look_ahead_seg_num].pt_info[index,4] and \
-            index < len(route_segments[look_ahead_seg_num].pt_info)):
+      while(index < len(route_segments[look_ahead_seg_num].pt_info) and \
+            dist_remaining > route_segments[look_ahead_seg_num].pt_info[index,4]):
         index += 1
       
       look_ahead_pt = np.array([route_segments[look_ahead_seg_num].pt_info[index-1,1], \
