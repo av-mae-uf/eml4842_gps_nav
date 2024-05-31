@@ -40,6 +40,7 @@ Note: If running on a Raspberry Pi 5 (Ubuntu 24.04) enter the following as an ad
 export QT_QPA_PLATFORM="xcb"
 ```
 This is required in order for the rviz2 simulator to be able to open a graphic window.
+Source the .bashrc file.  Note: It will be sourced every time you open a new terminal window from here on.
 
 Run the command below to see the simulation at work.
 ```bash
