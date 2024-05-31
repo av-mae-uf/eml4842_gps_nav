@@ -36,9 +36,9 @@ source install/setup.bash
 ```
 ## How to run simulation
 Note: If running on a Raspberry Pi 5 (Ubuntu 24.04) enter the following as an additional line to your .bashrc file:
-'''bash
+```bash
 export QT_QPA_PLATFOMR="xcb"
-'''
+```
 This is required in order for the rviz2 simulator to be able to open a graphic window.
 
 Run the command below to see the simulation at work.
